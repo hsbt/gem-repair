@@ -7,8 +7,9 @@ Gem::Specification.new do |spec|
   spec.summary       = "RubyGems plugin to repair gems with missing extensions."
   spec.description   = "A RubyGems plugin that finds and reinstalls gems with missing compiled extensions."
   spec.homepage      = "https://github.com/hsbt/gem-repair"
+  spec.license       = "MIT"
 
-  spec.files         = Dir.glob("lib/**/*") + %w[README.md]
+  spec.files         = Dir.glob("lib/**/*") + %w[README.md LICENSE]
   spec.require_paths = ["lib"]
 
   spec.required_ruby_version = ">= 2.7.0"
