@@ -101,7 +101,12 @@ Use -j to specify the number of parallel threads (default: 4).
 
     # Use spec.cache_file if available and valid, otherwise the installer might re-download
     # Forcing a specific installer might be needed if default behavior isn't right
-    installer = Gem::Installer.at(spec.cache_file, installer_options)
+    installer = if Gem::Installer.respond_to?(:at)
+      Gem::Installer.at(spec.cache_file, installer_options)
+    else
+      # Gem::Installer.at was added in RubyGems 2.5.0 (Ruby 2.3)
+      Gem::Installer.new(spec.cache_file, installer_options)
+    end
     installer.install
     say "Successfully repaired #{spec.full_name} to #{spec.base_dir}"
   rescue Gem::Ext::BuildError, Gem::Package::FormatError, Gem::InstallError, Zlib::BufError, NameError => e
