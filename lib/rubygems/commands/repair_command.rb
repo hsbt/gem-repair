@@ -53,47 +53,60 @@ Use -j to specify the number of parallel threads (default: 4).
 
     say "Found #{specs.count} gem(s) to repair: #{specs.map(&:full_name).join(', ')}"
 
-    queue = Queue.new
-    specs.each { |spec| queue << spec }
-
-    threads = []
     # Get number of threads from -j option, default to 4
     num_threads = options[:jobs] || 4
+    # Running Gem::Installer in multiple threads deadlocks on old Rubies
+    # (fatal "No live threads left" on Ruby 2.3), so repair sequentially there.
+    num_threads = 1 if RUBY_VERSION < "2.6"
 
-    say "Repairing gems using #{num_threads} parallel threads..."
+    if num_threads > 1
+      say "Repairing gems using #{num_threads} parallel threads..."
 
-    num_threads.times do
-      threads << Thread.new do
-        while !queue.empty? && (spec = queue.pop(true) rescue nil)
-          begin
-            say "Repairing #{spec.full_name}..."
-            # Ensure spec.base_dir is correct and writable
-            # The installer might need specific options, ensure they are correctly set up
-            installer_options = {
-              wrappers: true,
-              force: true, # Reinstall even if it appears installed
-              install_dir: spec.base_dir, # Install into the same location
-              env_shebang: true,
-              build_args: spec.build_args,
-              # Add other options as needed, e.g., :user_install => false if installing to system gems
-              # ignore_dependencies: true # Usually good for a restore/pristine operation
-            }
+      queue = Queue.new
+      specs.each { |spec| queue << spec }
 
-            # Use spec.cache_file if available and valid, otherwise the installer might re-download
-            # Forcing a specific installer might be needed if default behavior isn't right
-            installer = Gem::Installer.at(spec.cache_file, installer_options)
-            installer.install
-            say "Successfully repaired #{spec.full_name} to #{spec.base_dir}"
-          rescue Gem::Ext::BuildError, Gem::Package::FormatError, Gem::InstallError, Zlib::BufError, NameError => e
-            alert_error "Failed to repair #{spec.full_name}: #{e.message}\n  Backtrace: #{e.backtrace.join("\n             ")}"
-          rescue => e
-            alert_error "An unexpected error occurred while repairing #{spec.full_name}: #{e.message}\n  Backtrace: #{e.backtrace.join("\n             ")}"
+      threads = num_threads.times.map do
+        Thread.new do
+          while (spec = (queue.pop(true) rescue nil))
+            repair_gem(spec)
           end
         end
       end
+
+      threads.each(&:join)
+    else
+      say "Repairing gems sequentially..."
+
+      specs.each { |spec| repair_gem(spec) }
     end
 
-    threads.each(&:join)
     say "Gem repair process complete."
+  end
+
+  private
+
+  def repair_gem(spec)
+    say "Repairing #{spec.full_name}..."
+    # Ensure spec.base_dir is correct and writable
+    # The installer might need specific options, ensure they are correctly set up
+    installer_options = {
+      wrappers: true,
+      force: true, # Reinstall even if it appears installed
+      install_dir: spec.base_dir, # Install into the same location
+      env_shebang: true,
+      build_args: spec.build_args,
+      # Add other options as needed, e.g., :user_install => false if installing to system gems
+      # ignore_dependencies: true # Usually good for a restore/pristine operation
+    }
+
+    # Use spec.cache_file if available and valid, otherwise the installer might re-download
+    # Forcing a specific installer might be needed if default behavior isn't right
+    installer = Gem::Installer.at(spec.cache_file, installer_options)
+    installer.install
+    say "Successfully repaired #{spec.full_name} to #{spec.base_dir}"
+  rescue Gem::Ext::BuildError, Gem::Package::FormatError, Gem::InstallError, Zlib::BufError, NameError => e
+    alert_error "Failed to repair #{spec.full_name}: #{e.message}\n  Backtrace: #{e.backtrace.join("\n             ")}"
+  rescue => e
+    alert_error "An unexpected error occurred while repairing #{spec.full_name}: #{e.message}\n  Backtrace: #{e.backtrace.join("\n             ")}"
   end
 end
