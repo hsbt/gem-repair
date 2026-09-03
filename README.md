@@ -38,7 +38,7 @@ This command will:
 
 ## Development
 
-After checking out the repo, run `bundle install` to install dependencies. Then, you can run `rake test` to run the tests (though no tests are set up in this initial version).
+After checking out the repo, run `bundle install` to install dependencies. Then, you can run `rake test` to run the tests.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `gem-repair.gemspec`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [a configured gem server](https://rubygems.org).
 
