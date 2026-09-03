@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "gem-repair"
-  spec.version       = "0.2.1"
+  spec.version       = "0.3.0"
   spec.authors       = ["Hiroshi SHIBATA"]
   spec.email         = ["hsbt@ruby-lang.org"] # TODO: Replace with your email
 
