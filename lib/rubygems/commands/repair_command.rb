@@ -1,7 +1,8 @@
 require 'zlib'
 require 'rubygems/command'
 require 'rubygems/installer'
-require_relative '../../gem_repair/sweep'
+# see rubygems_plugin.rb
+require_relative '../../gem_repair/sweep' if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
 
 
 class Gem::Commands::RepairCommand < Gem::Command
@@ -62,8 +63,10 @@ Use -n to only show what would be done.
     dry_run = options[:dry_run]
     say "Searching for gems with missing extensions..."
 
-    Gem::Specification.each do |spec|
-      GemRepair::Sweep.clean(spec, dry_run: dry_run, aggressive: options[:aggressive_sweep], ui: ui)
+    if defined?(GemRepair::Sweep)
+      Gem::Specification.each do |spec|
+        GemRepair::Sweep.clean(spec, dry_run: dry_run, aggressive: options[:aggressive_sweep], ui: ui)
+      end
     end
 
     specs = Gem::Specification.select do |spec|
@@ -120,7 +123,7 @@ Use -n to only show what would be done.
     end
 
     # Reinstalling extracts the gem again, and the install hook only sweeps lib.
-    if options[:aggressive_sweep]
+    if options[:aggressive_sweep] && defined?(GemRepair::Sweep)
       specs.each { |spec| GemRepair::Sweep.clean(spec, aggressive: true, ui: ui) }
     end
 
