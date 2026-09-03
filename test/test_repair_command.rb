@@ -48,6 +48,7 @@ class TestRepairCommand < Minitest::Test
 
   def repair(*args)
     cmd = Gem::Commands::RepairCommand.new
+    yield cmd if block_given?
     cmd.handle_options(args)
     ui = Gem::StreamUI.new(StringIO.new, StringIO.new, StringIO.new, false)
     Gem::DefaultUserInteraction.use_ui(ui) { cmd.execute }
@@ -64,6 +65,31 @@ class TestRepairCommand < Minitest::Test
     assert File.exist?(File.join(ok.full_gem_path, "lib", "3.3", "ok#{DLEXT}"))
     assert_includes out, "Removed #{copy}"
     assert_includes out, "No gems found with missing extensions."
+  end
+
+  def test_aggressive_sweep_removes_development_directories
+    ok = install("ok")
+    test_dir = File.join(ok.full_gem_path, "test")
+    FileUtils.mkdir_p(test_dir)
+
+    repair
+    assert File.exist?(test_dir)
+
+    out, = repair("--aggressive-sweep")
+
+    refute File.exist?(test_dir)
+    assert_includes out, "Removed #{test_dir}"
+  end
+
+  def test_aggressive_sweep_runs_again_after_repair
+    broken = install("broken", built: false)
+    test_dir = File.join(broken.full_gem_path, "test")
+
+    repair("--aggressive-sweep") do |cmd|
+      cmd.define_singleton_method(:repair_gem) { |_spec| FileUtils.mkdir_p(test_dir) }
+    end
+
+    refute File.exist?(test_dir)
   end
 
   def test_prune_uninstalls_gems_still_missing_after_repair

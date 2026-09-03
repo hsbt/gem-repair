@@ -18,6 +18,10 @@ class Gem::Commands::RepairCommand < Gem::Command
       options[:prune] = true
     end
 
+    add_option('--aggressive-sweep',
+               'Also remove the test, spec, features and tmp directories of every gem') do |value, options|
+      options[:aggressive_sweep] = true
+    end
 
     add_option('-n', '--dry-run',
                'Show what would be repaired, removed or uninstalled without changing anything') do |value, options|
@@ -44,7 +48,8 @@ described in the README happens here too.
 
 Use -j to specify the number of parallel threads (default: 4).
 Use --prune to uninstall gems that are still missing extensions after repair.
-
+Use --aggressive-sweep to also remove the test, spec, features and tmp
+directories of every gem, as gem sweep --aggressive did.
 Use -n to only show what would be done.
     EOF
   end
@@ -58,7 +63,7 @@ Use -n to only show what would be done.
     say "Searching for gems with missing extensions..."
 
     Gem::Specification.each do |spec|
-      GemRepair::Sweep.clean(spec, dry_run: dry_run, ui: ui)
+      GemRepair::Sweep.clean(spec, dry_run: dry_run, aggressive: options[:aggressive_sweep], ui: ui)
     end
 
     specs = Gem::Specification.select do |spec|
@@ -114,6 +119,10 @@ Use -n to only show what would be done.
       specs.each { |spec| repair_gem(spec) }
     end
 
+    # Reinstalling extracts the gem again, and the install hook only sweeps lib.
+    if options[:aggressive_sweep]
+      specs.each { |spec| GemRepair::Sweep.clean(spec, aggressive: true, ui: ui) }
+    end
 
     if options[:prune]
       specs.select(&:missing_extensions?).each { |spec| prune_gem(spec) }

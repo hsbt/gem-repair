@@ -12,6 +12,10 @@ module GemRepair
   module Sweep
     DLEXT = ".#{RbConfig::CONFIG["DLEXT"]}"
 
+
+    # What gem sweep --aggressive removed on top of the extension copies.
+    DEVELOPMENT = %w[test spec features]
+
     module_function
 
     def targets(spec)
@@ -26,8 +30,18 @@ module GemRepair
       end
     end
 
-    def clean(spec, dry_run: false, ui: Gem::DefaultUserInteraction.ui)
-      targets(spec).each do |path|
+    def development_targets(spec)
+      return [] if spec.default_gem?
+
+      root = spec.full_gem_path
+      dirs = DEVELOPMENT.map { |dir| File.join(root, dir) } + Dir.glob("**/tmp", base: root).map { |tmp| File.join(root, tmp) }
+      dirs.select { |dir| File.directory?(dir) && dirs.none? { |other| dir.start_with?("#{other}/") } }
+    end
+
+    def clean(spec, dry_run: false, aggressive: false, ui: Gem::DefaultUserInteraction.ui)
+      paths = targets(spec)
+      paths += development_targets(spec) if aggressive
+      paths.each do |path|
         if dry_run
           ui.say "Would remove #{path}"
         else

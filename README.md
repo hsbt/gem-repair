@@ -43,7 +43,7 @@ Options:
 | --- | --- |
 | `-j N`, `--jobs N` | Number of parallel threads (default: 4) |
 | `--prune` | Uninstall gems whose extensions are still missing for the running ruby after repair, even when the reinstall itself failed |
-
+| `--aggressive-sweep` | Also remove the `test`, `spec`, `features` and `tmp` directories of every gem |
 | `-n`, `--dry-run` | Show what would be removed, repaired or uninstalled without changing anything |
 
 ## Removing extension copies from lib
@@ -58,7 +58,7 @@ This replaces the `gem sweep` command and the install hook of the gem-sweep plug
 gem uninstall gem-sweep
 ```
 
-`gem sweep --missing-extensions` becomes `gem repair --prune`, and `gem sweep -n` becomes `gem repair -n`.
+`gem sweep --missing-extensions` becomes `gem repair --prune`, `gem sweep --aggressive` becomes `gem repair --aggressive-sweep`, and `gem sweep -n` becomes `gem repair -n`.
 
 ## Building for other rubies on install
 
