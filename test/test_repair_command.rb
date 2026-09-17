@@ -5,8 +5,6 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 require "rubygems/commands/repair_command"
-# prune_gem requires this lazily, which cannot resolve after the spec list is replaced.
-require "rubygems/uninstaller"
 
 class TestRepairCommand < Minitest::Test
   DLEXT = GemRepair::Sweep::DLEXT
