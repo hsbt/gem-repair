@@ -11,6 +11,8 @@ class TestRepairCommand < Minitest::Test
 
   def setup
     @home = File.realpath(Dir.mktmpdir)
+    # A require under the replaced list below resolves these against it and raises.
+    Gem::Specification.unresolved_deps.clear
     @specs = []
     Gem::Specification.all = @specs
   end
