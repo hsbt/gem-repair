@@ -1,6 +1,7 @@
 require 'zlib'
 require 'rubygems/command'
 require 'rubygems/installer'
+require 'rubygems/uninstaller'
 # see rubygems_plugin.rb
 require_relative '../../gem_repair/sweep' if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("2.7")
 
@@ -167,8 +168,8 @@ Use -n to only show what would be done.
   end
 
   def prune_gem(spec)
-    require 'rubygems/uninstaller'
-    Gem::Uninstaller.new(spec.name, version: spec.version, install_dir: spec.base_dir, executables: true).uninstall_gem(spec)
+    # force skips the dependent-gem prompt, which RubyGems answers no to off a tty.
+    Gem::Uninstaller.new(spec.name, version: spec.version, install_dir: spec.base_dir, executables: true, force: true).uninstall_gem(spec)
   rescue Gem::Exception => e
     alert_error "Failed to uninstall #{spec.full_name}: #{e.message}"
   end
