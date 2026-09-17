@@ -20,7 +20,7 @@ class TestRepairCommand < Minitest::Test
     FileUtils.rm_rf(@home)
   end
 
-  def install(name, built: true, platform: nil)
+  def install(name, built: true, platform: nil, depends_on: nil)
     spec = Gem::Specification.new do |s|
       s.name = name
       s.version = "1.0"
@@ -28,6 +28,7 @@ class TestRepairCommand < Minitest::Test
       s.authors = ["test"]
       s.extensions = ["ext/extconf.rb"]
       s.platform = platform if platform
+      s.add_runtime_dependency(depends_on) if depends_on
     end
     FileUtils.mkdir_p(File.join(@home, "specifications"))
     File.write(File.join(@home, "specifications", "#{spec.full_name}.gemspec"), spec.to_ruby)
@@ -98,6 +99,17 @@ class TestRepairCommand < Minitest::Test
     assert_includes err, "Failed to repair broken-1.0"
     assert_includes out, "Successfully uninstalled broken-1.0"
     refute File.exist?(broken.full_gem_path)
+    refute File.exist?(broken.spec_file)
+  end
+
+  def test_prune_uninstalls_a_gem_another_one_depends_on
+    broken = install("broken", built: false)
+    install("dependent", depends_on: "broken")
+
+    out, err = repair("--prune")
+
+    assert_includes out, "Successfully uninstalled broken-1.0"
+    refute_includes err, "Uninstallation aborted"
     refute File.exist?(broken.spec_file)
   end
 
